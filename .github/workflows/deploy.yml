@@ -1,0 +1,46 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main"] # Or "master" if that is your default branch
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Inject Secrets into HTML
+        run: |
+          sed -i 's/INJECT_API_KEY/${{ secrets.DRIVE_API_KEY }}/g' index.html
+          sed -i 's/INJECT_FOLDER_ID_1/${{ secrets.DRIVE_FOLDER_ID_1 }}/g' index.html
+          sed -i 's/INJECT_FOLDER_ID_2/${{ secrets.DRIVE_FOLDER_ID_2 }}/g' index.html
+          sed -i 's/INJECT_FOLDER_ID_3/${{ secrets.DRIVE_FOLDER_ID_3 }}/g' index.html
+          sed -i 's/INJECT_FOLDER_ID_4/${{ secrets.DRIVE_FOLDER_ID_4 }}/g' index.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # Uploads the whole repository root
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
