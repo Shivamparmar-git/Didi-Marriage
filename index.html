@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Root Drive Manager</title>
+  <style>
+    /* --- CSS (Unchanged) --- */
+    :root {
+      --bg-color: #0d1117; --card-bg: #161b22; --text-color: #e6edf3;
+      --accent: #2f81f7; --hover-bg: #21262d; --border-color: #30363d;
+      --overlay-bg: rgba(0, 0, 0, 0.95);
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: var(--bg-color); color: var(--text-color); font-family: var(--font-stack); padding: 2rem; }
+    .app-container { max-width: 1200px; margin: 0 auto; }
+    
+    .breadcrumbs {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      background: var(--card-bg); padding: 1rem 1.5rem; border-radius: 8px;
+      border: 1px solid var(--border-color); margin-bottom: 2rem; font-size: 1.1rem;
+    }
+    .breadcrumb-item { cursor: pointer; color: var(--accent); font-weight: 500; transition: color 0.2s; }
+    .breadcrumb-item:hover { text-decoration: underline; }
+    .breadcrumb-separator { color: #8b949e; user-select: none; }
+    .breadcrumb-current { color: var(--text-color); font-weight: 600; cursor: default; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; }
+    .status-msg { text-align: center; padding: 3rem; font-size: 1.1rem; color: #8b949e; width: 100%; grid-column: 1 / -1; }
+
+    .item-card {
+      background-color: var(--card-bg); border-radius: 8px; overflow: hidden; cursor: pointer;
+      border: 1px solid var(--border-color); transition: transform 0.2s, border-color 0.2s, background-color 0.2s;
+      display: flex; flex-direction: column;
+    }
+    .item-card:hover { transform: translateY(-4px); border-color: var(--accent); background-color: var(--hover-bg); }
+    
+    .folder-card { flex-direction: row; align-items: center; padding: 1rem; }
+    .folder-card .icon { font-size: 2rem; margin-right: 15px; }
+    .folder-card .info { flex: 1; overflow: hidden; }
+    .folder-card .info p { margin: 0; font-weight: 500; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+    
+    .media-thumb { width: 100%; height: 160px; position: relative; background: #000; }
+    .media-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .media-info { padding: 0.8rem 1rem; border-top: 1px solid var(--border-color); }
+    .media-info p { margin: 0; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .video-icon {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.6); border-radius: 50%; width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center; color: white; padding-left: 4px; z-index: 10; font-size: 1.2rem;
+    }
+
+    #lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--overlay-bg); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    #lightbox.active { opacity: 1; pointer-events: auto; }
+    .lightbox-content { position: relative; width: 90%; height: 85vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    #media-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+    #media-container img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+    #media-container iframe { width: 80%; height: 100%; border: none; border-radius: 8px; background: black; }
+    #lightbox-caption { margin-top: 1rem; font-size: 1.1rem; color: #fff; text-align: center; }
+    
+    .close-btn { position: absolute; top: -40px; right: 0; background: none; border: none; color: #fff; font-size: 2.5rem; cursor: pointer; z-index: 1010; }
+    .nav-touch { position: absolute; top: 0; height: 100%; width: 15%; display: flex; align-items: center; justify-content: center; opacity: 0; cursor: pointer; border: none; background: none; color: white; z-index: 1005; }
+    @media (hover: hover) { .lightbox-content:hover .nav-touch { opacity: 1; } }
+    .nav-left { left: -10%; } .nav-right { right: -10%; }
+    .nav-arrow { background: rgba(255,255,255,0.2); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    body.no-scroll { overflow: hidden; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <div class="breadcrumbs" id="breadcrumbs"></div>
+    <div class="grid" id="grid">
+      <div class="status-msg">Loading Drive files...</div>
+    </div>
+  </div>
+
+  <div id="lightbox">
+    <div class="lightbox-content">
+      <button class="close-btn" id="close-btn">&times;</button>
+      <button class="nav-touch nav-left" id="prev-btn"><span class="nav-arrow">&#10094;</span></button>
+      <div id="media-container"></div>
+      <button class="nav-touch nav-right" id="next-btn"><span class="nav-arrow">&#10095;</span></button>
+      <p id="lightbox-caption"></p>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================
+       1. MULTI-ROOT CONFIGURATION
+    ========================================= */
+    const API_KEY = 'INJECT_API_KEY';
+    
+    // Add as many starting folders as you want here!
+    const ROOT_FOLDERS = [
+      { id: 'INJECT_FOLDER_ID_1', name: 'Folder 1' },
+      { id: 'INJECT_FOLDER_ID_2', name: 'Folder 2' },
+      { id: 'INJECT_FOLDER_ID_3', name: 'Folder 3' },
+      { id: 'INJECT_FOLDER_ID_4', name: 'Folder 4' }
+    ];
+
+    /* --- STATE VARIABLES --- */
+    let pathHistory = []; 
+    let currentFolderMedia = []; 
+    let currentLightboxIndex = -1;
+
+    const grid = document.getElementById('grid');
+    const breadcrumbsContainer = document.getElementById('breadcrumbs');
+    const lightbox = document.getElementById('lightbox');
+    const mediaContainer = document.getElementById('media-container');
+
+    /* =========================================
+       2. HISTORY API (BACK BUTTON SUPPORT)
+    ========================================= */
+    
+    // Initialize the app and set the very first history state
+    function init() {
+      pathHistory = [{ id: 'HOME', name: 'Home' }];
+      history.replaceState({ type: 'folder', pathHistory: pathHistory }, "", "?home");
+      renderCurrentState();
+    }
+
+    // Listens for the Browser/Android Back Button
+    window.addEventListener('popstate', (event) => {
+      const state = event.state;
+      if (!state) return;
+
+      if (state.type === 'folder') {
+        // If the user pressed back while a photo was open, just close the photo
+        if (lightbox.classList.contains('active')) {
+          closeLightboxUI();
+          
+          // Optimization: If the folder hasn't changed, don't re-download it
+          const oldFolderId = pathHistory[pathHistory.length - 1].id;
+          const newFolderId = state.pathHistory[state.pathHistory.length - 1].id;
+          if (oldFolderId === newFolderId) return; 
+        }
+
+        pathHistory = state.pathHistory;
+        renderCurrentState();
+      } 
+      else if (state.type === 'lightbox') {
+        // If user navigated forward into a lightbox state
+        openLightboxUI(state.index);
+      }
+    });
+
+    // Handle clicks on Folders
+    function onFolderClick(folderId, folderName) {
+      const safeName = folderName.replace(/&quot;/g, '"').replace(/\\'/g, "'");
+      pathHistory.push({ id: folderId, name: safeName });
+      
+      // Push new state to browser history
+      history.pushState({ type: 'folder', pathHistory: pathHistory }, "", `?folder=${folderId}`);
+      renderCurrentState();
+    }
+
+    // Handle clicks on Breadcrumbs
+    function onBreadcrumbClick(index) {
+      pathHistory = pathHistory.slice(0, index + 1);
+      const target = pathHistory[pathHistory.length - 1];
+      
+      history.pushState({ type: 'folder', pathHistory: pathHistory }, "", target.id === 'HOME' ? "?home" : `?folder=${target.id}`);
+      renderCurrentState();
+    }
+
+    /* =========================================
+       3. RENDERING LOGIC
+    ========================================= */
+
+    function renderCurrentState() {
+      renderBreadcrumbs();
+      const current = pathHistory[pathHistory.length - 1];
+      
+      if (current.id === 'HOME') {
+        renderHome();
+      } else {
+        fetchAndRenderDriveFolder(current.id);
+      }
+    }
+
+    function renderBreadcrumbs() {
+      breadcrumbsContainer.innerHTML = '';
+      pathHistory.forEach((crumb, index) => {
+        const isLast = index === pathHistory.length - 1;
+        if (isLast) {
+          breadcrumbsContainer.innerHTML += `<span class="breadcrumb-current">${crumb.name}</span>`;
+        } else {
+          breadcrumbsContainer.innerHTML += `
+            <span class="breadcrumb-item" onclick="onBreadcrumbClick(${index})">${crumb.name}</span>
+            <span class="breadcrumb-separator">/</span>
+          `;
+        }
+      });
+    }
+
+    // Render the hardcoded ROOT_FOLDERS list
+    function renderHome() {
+      grid.innerHTML = '';
+      currentFolderMedia = []; 
+      
+      ROOT_FOLDERS.forEach(folder => {
+        const safeName = folder.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        grid.innerHTML += `
+          <div class="item-card folder-card" onclick="onFolderClick('${folder.id}', '${safeName}')">
+            <div class="icon">&#128193;</div>
+            <div class="info"><p title="${safeName}">${folder.name}</p></div>
+          </div>
+        `;
+      });
+    }
+
+    // Fetch dynamic subfolders and media from Google Drive
+    async function fetchAndRenderDriveFolder(folderId) {
+      grid.innerHTML = '<div class="status-msg">Loading contents...</div>';
+      let allFiles = [];
+      let pageToken = '';
+      
+      try {
+        do {
+          const q = `'${folderId}' in parents and trashed = false and (mimeType = 'application/vnd.google-apps.folder' or mimeType contains 'image/' or mimeType contains 'video/')`;
+          let url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=nextPageToken,files(id,name,mimeType,thumbnailLink)&orderBy=folder,name&pageSize=1000&key=${API_KEY}`;
+          if (pageToken) url += `&pageToken=${pageToken}`;
+
+          const response = await fetch(url);
+          const data = await response.json();
+          if (data.files) allFiles = allFiles.concat(data.files);
+          pageToken = data.nextPageToken; 
+        } while (pageToken);
+
+        if (allFiles.length === 0) {
+          grid.innerHTML = '<div class="status-msg">This folder is empty.</div>';
+          currentFolderMedia = [];
+          return;
+        }
+
+        renderGrid(allFiles);
+      } catch (error) {
+        console.error(error);
+        grid.innerHTML = '<div class="status-msg" style="color: #ff7b72;">Failed to load folder. Check API key.</div>';
+      }
+    }
+
+    function renderGrid(files) {
+      grid.innerHTML = '';
+      currentFolderMedia = []; 
+
+      files.forEach(file => {
+        const safeName = file.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        
+        if (file.mimeType === 'application/vnd.google-apps.folder') {
+          grid.innerHTML += `
+            <div class="item-card folder-card" onclick="onFolderClick('${file.id}', '${safeName}')">
+              <div class="icon">&#128193;</div>
+              <div class="info"><p title="${safeName}">${file.name}</p></div>
+            </div>
+          `;
+        } else {
+          const isVideo = file.mimeType.includes('video');
+          const mediaIndex = currentFolderMedia.length; 
+          
+          let thumbUrl = file.thumbnailLink || ''; 
+          if (thumbUrl && thumbUrl.includes('=s220')) thumbUrl = thumbUrl.replace('=s220', '=s400');
+          else if (!thumbUrl && !isVideo) thumbUrl = `https://lh3.googleusercontent.com/d/${file.id}=w400-h400-pq`;
+
+          grid.innerHTML += `
+            <div class="item-card media-card" onclick="userOpensLightbox(${mediaIndex})">
+              <div class="media-thumb">
+                ${isVideo ? '<div class="video-icon">&#9658;</div>' : ''}
+                <img src="${thumbUrl}" alt="${safeName}" loading="lazy" />
+              </div>
+              <div class="media-info"><p title="${safeName}">${file.name}</p></div>
+            </div>
+          `;
+          currentFolderMedia.push(file);
+        }
+      });
+    }
+
+    /* =========================================
+       4. LIGHTBOX & HISTORY INTEGRATION
+    ========================================= */
+
+    // Triggered by clicking a photo
+    function userOpensLightbox(index) {
+      // Tell the browser a new "page" (the lightbox) opened
+      history.pushState({ type: 'lightbox', pathHistory: pathHistory, index: index }, "", `?lightbox=true`);
+      openLightboxUI(index);
+    }
+
+    // Triggered by clicking the X button or Esc
+    function userClosesLightbox() {
+      // Trigger the browser's native back behavior, which fires popstate and closes the UI
+      history.back(); 
+    }
+
+    function openLightboxUI(index) {
+      if (index < 0 || index >= currentFolderMedia.length) return;
+      currentLightboxIndex = index;
+      
+      const file = currentFolderMedia[currentLightboxIndex];
+      const isVideo = file.mimeType.includes('video');
+      
+      mediaContainer.innerHTML = ''; 
+      if (isVideo) {
+        mediaContainer.innerHTML = `<iframe src="https://drive.google.com/file/d/${file.id}/preview" allow="autoplay" allowfullscreen></iframe>`;
+      } else {
+        mediaContainer.innerHTML = `<img src="https://lh3.googleusercontent.com/d/${file.id}" alt="image">`;
+      }
+
+      document.getElementById('lightbox-caption').textContent = file.name;
+      lightbox.classList.add('active');
+      document.body.classList.add('no-scroll');
+      document.addEventListener('keydown', handleKeyPress);
+    }
+
+    function closeLightboxUI() {
+      lightbox.classList.remove('active');
+      document.body.classList.remove('no-scroll');
+      mediaContainer.innerHTML = ''; 
+      currentLightboxIndex = -1;
+      document.removeEventListener('keydown', handleKeyPress);
+    }
+
+    function navigateGallery(direction) {
+      if (currentLightboxIndex === -1) return;
+      let nextIndex = currentLightboxIndex + direction;
+      if (nextIndex < 0) nextIndex = currentFolderMedia.length - 1;
+      if (nextIndex >= currentFolderMedia.length) nextIndex = 0;
+      
+      // Update history state so refreshing stays on the right image
+      history.replaceState({ type: 'lightbox', pathHistory: pathHistory, index: nextIndex }, "", `?lightbox=true`);
+      openLightboxUI(nextIndex);
+    }
+
+    document.getElementById('close-btn').addEventListener('click', userClosesLightbox);
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox || e.target.classList.contains('lightbox-content')) userClosesLightbox();
+    });
+    
+    document.getElementById('prev-btn').addEventListener('click', (e) => { e.stopPropagation(); navigateGallery(-1); });
+    document.getElementById('next-btn').addEventListener('click', (e) => { e.stopPropagation(); navigateGallery(1); });
+
+    function handleKeyPress(e) {
+      if (!lightbox.classList.contains('active')) return;
+      if (e.key === 'ArrowRight' || e.key === 'd') navigateGallery(1);
+      if (e.key === 'ArrowLeft' || e.key === 'a') navigateGallery(-1);
+      if (e.key === 'Escape') userClosesLightbox();
+    }
+
+    // Touch Swipes
+    let touchStartX = 0; let touchEndX = 0;
+    mediaContainer.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+    mediaContainer.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        const threshold = 50;
+        if (touchEndX < touchStartX - threshold) navigateGallery(1);
+        if (touchEndX > touchStartX + threshold) navigateGallery(-1);
+    }, {passive: true});
+
+    // Start App
+    init();
+
+  </script>
+</body>
+</html>
