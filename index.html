@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Multi-Root Drive Manager</title>
   <style>
-    /* --- CSS (Unchanged) --- */
+    /* --- CSS (Unchanged Base) --- */
     :root {
       --bg-color: #0d1117; --card-bg: #161b22; --text-color: #e6edf3;
       --accent: #2f81f7; --hover-bg: #21262d; --border-color: #30363d;
@@ -52,55 +52,117 @@
       display: flex; align-items: center; justify-content: center; color: white; padding-left: 4px; z-index: 10; font-size: 1.2rem;
     }
 
-    #lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--overlay-bg); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-    #lightbox.active { opacity: 1; pointer-events: auto; }
-    .lightbox-content { position: relative; width: 90%; height: 85vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    #media-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
-    #media-container img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
-    #media-container iframe { width: 80%; height: 100%; border: none; border-radius: 8px; background: black; }
-    #lightbox-caption { margin-top: 1rem; font-size: 1.1rem; color: #fff; text-align: center; }
-    
-    .close-btn { position: absolute; top: -40px; right: 0; background: none; border: none; color: #fff; font-size: 2.5rem; cursor: pointer; z-index: 1010; }
-    .nav-touch { position: absolute; top: 0; height: 100%; width: 15%; display: flex; align-items: center; justify-content: center; opacity: 0; cursor: pointer; border: none; background: none; color: white; z-index: 1005; }
-    @media (hover: hover) { .lightbox-content:hover .nav-touch { opacity: 1; } }
-    .nav-left { left: -10%; } .nav-right { right: -10%; }
-    .nav-arrow { background: rgba(255,255,255,0.2); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
     body.no-scroll { overflow: hidden; }
 
     /* =========================================
-       NEW MOBILE OPTIMIZATIONS
+       FIXED LIGHTBOX CSS FOR IFRAME CONTROLS
+    ========================================= */
+    #lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; background-color: var(--overlay-bg); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    #lightbox.active { opacity: 1; pointer-events: auto; }
+    
+    .lightbox-content { 
+      position: relative; 
+      width: 90%; 
+      height: 90dvh; 
+      display: flex; 
+      flex-direction: column; 
+    }
+
+    /* Keep close button away from Drive controls */
+    .lightbox-header {
+      height: 50px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .close-btn { 
+      background: rgba(255,255,255,0.15); 
+      border: none; 
+      color: #fff; 
+      font-size: 2rem; 
+      cursor: pointer; 
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: background 0.2s;
+    }
+    .close-btn:hover { background: rgba(255,255,255,0.3); }
+
+    /* Flex 1 and min-height 0 prevents the iframe from overflowing the screen */
+    #media-container { 
+      width: 100%; 
+      flex: 1; 
+      min-height: 0; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      position: relative;
+    }
+    #media-container img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+    #media-container iframe { width: 100%; height: 100%; border: none; border-radius: 8px; background: black; }
+    
+    #lightbox-caption { 
+      margin-top: 10px; 
+      font-size: 1.1rem; 
+      color: #fff; 
+      text-align: center; 
+      flex-shrink: 0;
+      padding-bottom: 5px;
+    }
+    
+    /* Center arrows strictly in the middle so they DO NOT block corners */
+    .nav-touch { 
+      position: absolute; 
+      top: 50%; 
+      transform: translateY(-50%);
+      width: 60px; 
+      height: 60px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      opacity: 0; 
+      cursor: pointer; 
+      border: none; 
+      background: none; 
+      color: white; 
+      z-index: 1005; 
+    }
+    @media (hover: hover) { .lightbox-content:hover .nav-touch { opacity: 1; } }
+    .nav-left { left: -70px; } 
+    .nav-right { right: -70px; }
+    .nav-arrow { background: rgba(255,255,255,0.2); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+
+    /* =========================================
+       MOBILE OPTIMIZATIONS
     ========================================= */
     @media (max-width: 768px) {
       body { padding: 1rem; }
       .breadcrumbs { padding: 0.8rem 1rem; font-size: 0.95rem; margin-bottom: 1.5rem; }
-      
-      /* Allows 2 columns on phones instead of 1 giant one */
       .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
       .media-thumb { height: 140px; }
       
-      .lightbox-content { width: 100%; height: 95vh; }
-      #media-container iframe { width: 100%; border-radius: 0; }
+      /* Full screen lightbox on mobile */
+      .lightbox-content { width: 100%; height: 100dvh; }
       
-      /* Make close button safe and visible inside viewport */
-      .close-btn { 
-        position: fixed; 
-        top: 15px; 
-        right: 15px; 
-        width: 45px; 
-        height: 45px; 
-        background: rgba(0,0,0,0.6); 
-        border-radius: 50%; 
-        display: flex; 
-        justify-content: center; 
-        align-items: center; 
-        line-height: 1;
-      }
+      /* Move close button to Top-Left on mobile to avoid Drive's Zoom controls on the right */
+      .lightbox-header { padding: 10px 15px; position: absolute; top: 0; left: 0; width: 100%; justify-content: flex-start; z-index: 1010; pointer-events: none; }
+      .close-btn { pointer-events: auto; background: rgba(0,0,0,0.6); }
       
-      /* Adjust touch zones to remain inside boundaries, avoiding horizontal scroll */
-      .nav-left { left: 0; width: 20%; }
-      .nav-right { right: 0; width: 20%; }
+      #media-container iframe, #media-container img { border-radius: 0; }
       
-      #lightbox-caption { padding: 0 1rem; font-size: 1rem; margin-top: 0.5rem; }
+      /* Make touch buttons visible but small, safely placed in the vertical center */
+      .nav-touch { opacity: 1; background: rgba(0,0,0,0.3); border-radius: 50%; width: 45px; height: 45px; }
+      .nav-left { left: 10px; }
+      .nav-right { right: 10px; }
+      .nav-arrow { background: transparent; font-size: 1.2rem; }
+      
+      #lightbox-caption { padding: 0 1rem 15px 1rem; font-size: 1rem; position: relative; z-index: 1005; }
     }
   </style>
 </head>
@@ -115,7 +177,9 @@
 
   <div id="lightbox">
     <div class="lightbox-content">
-      <button class="close-btn" id="close-btn">&times;</button>
+      <div class="lightbox-header">
+        <button class="close-btn" id="close-btn">&times;</button>
+      </div>
       <button class="nav-touch nav-left" id="prev-btn"><span class="nav-arrow">&#10094;</span></button>
       <div id="media-container"></div>
       <button class="nav-touch nav-right" id="next-btn"><span class="nav-arrow">&#10095;</span></button>
@@ -164,21 +228,16 @@
       if (!state) return;
 
       if (state.type === 'folder') {
-        // If the user pressed back while a photo was open, just close the photo
         if (lightbox.classList.contains('active')) {
           closeLightboxUI();
-          
-          // Optimization: If the folder hasn't changed, don't re-download it
           const oldFolderId = pathHistory[pathHistory.length - 1].id;
           const newFolderId = state.pathHistory[state.pathHistory.length - 1].id;
           if (oldFolderId === newFolderId) return; 
         }
-
         pathHistory = state.pathHistory;
         renderCurrentState();
       } 
       else if (state.type === 'lightbox') {
-        // If user navigated forward into a lightbox state
         openLightboxUI(state.index);
       }
     });
@@ -187,8 +246,6 @@
     function onFolderClick(folderId, folderName) {
       const safeName = folderName.replace(/&quot;/g, '"').replace(/\\'/g, "'");
       pathHistory.push({ id: folderId, name: safeName });
-      
-      // Push new state to browser history
       history.pushState({ type: 'folder', pathHistory: pathHistory }, "", `?folder=${folderId}`);
       renderCurrentState();
     }
@@ -197,7 +254,6 @@
     function onBreadcrumbClick(index) {
       pathHistory = pathHistory.slice(0, index + 1);
       const target = pathHistory[pathHistory.length - 1];
-      
       history.pushState({ type: 'folder', pathHistory: pathHistory }, "", target.id === 'HOME' ? "?home" : `?folder=${target.id}`);
       renderCurrentState();
     }
@@ -319,16 +375,12 @@
        4. LIGHTBOX & HISTORY INTEGRATION
     ========================================= */
 
-    // Triggered by clicking a photo
     function userOpensLightbox(index) {
-      // Tell the browser a new "page" (the lightbox) opened
       history.pushState({ type: 'lightbox', pathHistory: pathHistory, index: index }, "", `?lightbox=true`);
       openLightboxUI(index);
     }
 
-    // Triggered by clicking the X button or Esc
     function userClosesLightbox() {
-      // Trigger the browser's native back behavior, which fires popstate and closes the UI
       history.back(); 
     }
 
@@ -366,14 +418,13 @@
       if (nextIndex < 0) nextIndex = currentFolderMedia.length - 1;
       if (nextIndex >= currentFolderMedia.length) nextIndex = 0;
       
-      // Update history state so refreshing stays on the right image
       history.replaceState({ type: 'lightbox', pathHistory: pathHistory, index: nextIndex }, "", `?lightbox=true`);
       openLightboxUI(nextIndex);
     }
 
     document.getElementById('close-btn').addEventListener('click', userClosesLightbox);
     lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox || e.target.classList.contains('lightbox-content')) userClosesLightbox();
+        if (e.target === lightbox || e.target.classList.contains('lightbox-content') || e.target.classList.contains('lightbox-header')) userClosesLightbox();
     });
     
     document.getElementById('prev-btn').addEventListener('click', (e) => { e.stopPropagation(); navigateGallery(-1); });
