@@ -66,6 +66,42 @@
     .nav-left { left: -10%; } .nav-right { right: -10%; }
     .nav-arrow { background: rgba(255,255,255,0.2); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
     body.no-scroll { overflow: hidden; }
+
+    /* =========================================
+       NEW MOBILE OPTIMIZATIONS
+    ========================================= */
+    @media (max-width: 768px) {
+      body { padding: 1rem; }
+      .breadcrumbs { padding: 0.8rem 1rem; font-size: 0.95rem; margin-bottom: 1.5rem; }
+      
+      /* Allows 2 columns on phones instead of 1 giant one */
+      .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
+      .media-thumb { height: 140px; }
+      
+      .lightbox-content { width: 100%; height: 95vh; }
+      #media-container iframe { width: 100%; border-radius: 0; }
+      
+      /* Make close button safe and visible inside viewport */
+      .close-btn { 
+        position: fixed; 
+        top: 15px; 
+        right: 15px; 
+        width: 45px; 
+        height: 45px; 
+        background: rgba(0,0,0,0.6); 
+        border-radius: 50%; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        line-height: 1;
+      }
+      
+      /* Adjust touch zones to remain inside boundaries, avoiding horizontal scroll */
+      .nav-left { left: 0; width: 20%; }
+      .nav-right { right: 0; width: 20%; }
+      
+      #lightbox-caption { padding: 0 1rem; font-size: 1rem; margin-top: 0.5rem; }
+    }
   </style>
 </head>
 <body>
