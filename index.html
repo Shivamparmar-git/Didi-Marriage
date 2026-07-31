@@ -55,7 +55,7 @@
     body.no-scroll { overflow: hidden; }
 
     /* =========================================
-       FIXED LIGHTBOX CSS (PROPORTIONAL SIZING)
+       FIXED LIGHTBOX & PERFECT PLAYER SIZE CSS
     ========================================= */
     #lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; background-color: var(--overlay-bg); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
     #lightbox.active { opacity: 1; pointer-events: auto; }
@@ -101,14 +101,23 @@
     }
     #media-container img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
     
-    /* Fixed 16:9 aspect ratio and max-height prevents Google Drive controls from stretching out of proportion */
-    #media-container iframe { 
+    /* Strict 16:9 Wrapper ensuring compact, perfectly sized player controls */
+    .video-frame-wrapper {
+      width: 100%;
+      max-width: 950px;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .video-frame-wrapper iframe { 
       width: 100%; 
-      max-height: 75dvh; 
-      aspect-ratio: 16 / 9; 
+      height: 100%; 
       border: none; 
-      border-radius: 8px; 
-      background: black; 
     }
     
     #lightbox-caption { 
@@ -161,11 +170,10 @@
       .lightbox-content { width: 100%; height: 100dvh; }
       .nav-touch { opacity: 0.8; width: 40px; height: 40px; }
       
-      #media-container iframe { 
-        width: 100%; 
-        max-height: 70dvh; 
-        aspect-ratio: 16 / 9; 
-        border-radius: 4px; 
+      .video-frame-wrapper {
+        width: 100%;
+        max-height: 75dvh;
+        border-radius: 4px;
       }
       #lightbox-caption { display: none; }
     }
@@ -196,7 +204,6 @@
     ========================================= */
     const API_KEY = 'INJECT_API_KEY';
     
-    // Add as many starting folders as you want here!
     const ROOT_FOLDERS = [
       { id: 'INJECT_FOLDER_ID_1', name: 'Folder 1' },
       { id: 'INJECT_FOLDER_ID_2', name: 'Folder 2' },
@@ -218,14 +225,12 @@
        2. HISTORY API (BACK BUTTON SUPPORT)
     ========================================= */
     
-    // Initialize the app and set the very first history state
     function init() {
       pathHistory = [{ id: 'HOME', name: 'Home' }];
       history.replaceState({ type: 'folder', pathHistory: pathHistory }, "", "?home");
       renderCurrentState();
     }
 
-    // Listens for the Browser/Android Back Button
     window.addEventListener('popstate', (event) => {
       const state = event.state;
       if (!state) return;
@@ -245,7 +250,6 @@
       }
     });
 
-    // Handle clicks on Folders
     function onFolderClick(folderId, folderName) {
       const safeName = folderName.replace(/&quot;/g, '"').replace(/\\'/g, "'");
       pathHistory.push({ id: folderId, name: safeName });
@@ -253,7 +257,6 @@
       renderCurrentState();
     }
 
-    // Handle clicks on Breadcrumbs
     function onBreadcrumbClick(index) {
       pathHistory = pathHistory.slice(0, index + 1);
       const target = pathHistory[pathHistory.length - 1];
@@ -291,7 +294,6 @@
       });
     }
 
-    // Render the hardcoded ROOT_FOLDERS list
     function renderHome() {
       grid.innerHTML = '';
       currentFolderMedia = []; 
@@ -307,7 +309,6 @@
       });
     }
 
-    // Fetch dynamic subfolders and media from Google Drive
     async function fetchAndRenderDriveFolder(folderId) {
       grid.innerHTML = '<div class="status-msg">Loading contents...</div>';
       let allFiles = [];
@@ -396,7 +397,11 @@
       
       mediaContainer.innerHTML = ''; 
       if (isVideo) {
-        mediaContainer.innerHTML = `<iframe src="https://drive.google.com/file/d/${file.id}/preview" allow="autoplay" allowfullscreen></iframe>`;
+        mediaContainer.innerHTML = `
+          <div class="video-frame-wrapper">
+            <iframe src="https://drive.google.com/file/d/${file.id}/preview" allow="autoplay" allowfullscreen></iframe>
+          </div>
+        `;
       } else {
         mediaContainer.innerHTML = `<img src="https://lh3.googleusercontent.com/d/${file.id}" alt="image">`;
       }
@@ -440,7 +445,6 @@
       if (e.key === 'Escape') userClosesLightbox();
     }
 
-    // Touch Swipes
     let touchStartX = 0; let touchEndX = 0;
     mediaContainer.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
     mediaContainer.addEventListener('touchend', (e) => {
@@ -450,7 +454,6 @@
         if (touchEndX > touchStartX + threshold) navigateGallery(-1);
     }, {passive: true});
 
-    // Start App
     init();
 
   </script>
