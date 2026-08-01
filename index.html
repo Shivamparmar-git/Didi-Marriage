@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Multi-Root Drive Manager</title>
   <style>
-    /* --- CSS (Unchanged Base) --- */
+    /* --- CSS (Base) --- */
     :root {
       --bg-color: #0d1117; --card-bg: #161b22; --text-color: #e6edf3;
       --accent: #2f81f7; --hover-bg: #21262d; --border-color: #30363d;
@@ -55,15 +55,29 @@
     body.no-scroll { overflow: hidden; }
 
     /* =========================================
-       FIXED LIGHTBOX & PERFECT PLAYER SIZE CSS
+       CLEAN LIGHTBOX & POPUP CSS
     ========================================= */
-    #lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; background-color: var(--overlay-bg); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    #lightbox { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100dvh; 
+      background-color: var(--overlay-bg); 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 1000; 
+      opacity: 0; 
+      pointer-events: none; 
+      transition: opacity 0.3s ease; 
+    }
     #lightbox.active { opacity: 1; pointer-events: auto; }
     
     .lightbox-content { 
       position: relative; 
-      width: 95%; 
-      height: 95dvh; 
+      width: 100%; 
+      height: 100%; 
       display: flex; 
       flex-direction: column; 
       justify-content: center;
@@ -72,10 +86,10 @@
 
     .close-btn { 
       position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.6); 
-      border: none; 
+      top: 15px;
+      right: 15px;
+      background: rgba(0,0,0,0.5); 
+      border: 1px solid rgba(255,255,255,0.2);
       color: #fff; 
       font-size: 2rem; 
       cursor: pointer; 
@@ -87,9 +101,9 @@
       justify-content: center;
       line-height: 1;
       z-index: 1020;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.2s;
     }
-    .close-btn:hover { background: rgba(0,0,0,0.8); }
+    .close-btn:hover { background: rgba(0,0,0,0.8); transform: scale(1.05); }
 
     #media-container { 
       width: 100%; 
@@ -99,34 +113,43 @@
       align-items: center; 
       position: relative;
     }
-    #media-container img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+
+    /* Standard Popup for Images */
+    #media-container img { 
+      max-width: 90%; 
+      max-height: 85vh; 
+      object-fit: contain; 
+      border-radius: 8px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
     
-    /* Strict 16:9 Wrapper ensuring compact, perfectly sized player controls */
-    .video-frame-wrapper {
-      width: 100%;
-      max-width: 950px;
-      aspect-ratio: 16 / 9;
+    /* Clean, Standard Popup for Videos */
+    .popup-video-wrapper {
+      width: 90%;
+      max-width: 1000px;
+      height: 75vh;
       background: #000;
-      border-radius: 8px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
       overflow: hidden;
-      position: relative;
       display: flex;
       justify-content: center;
       align-items: center;
     }
-    .video-frame-wrapper iframe { 
-      width: 100%; 
-      height: 100%; 
-      border: none; 
+    .popup-video-wrapper iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
     }
     
     #lightbox-caption { 
       position: absolute;
-      bottom: 5px;
+      bottom: 15px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 0.95rem; 
-      color: rgba(255,255,255,0.7); 
+      font-size: 1rem; 
+      color: rgba(255,255,255,0.8); 
       text-align: center; 
       z-index: 1010;
       pointer-events: none;
@@ -134,6 +157,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 80%;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     }
     
     .nav-touch { 
@@ -152,14 +176,16 @@
       border-radius: 50%;
       color: white; 
       z-index: 1015; 
+      transition: opacity 0.2s, background 0.2s;
     }
+    .nav-touch:hover { background: rgba(0,0,0,0.7); }
     @media (hover: hover) { .lightbox-content:hover .nav-touch { opacity: 1; } }
-    .nav-left { left: 10px; } 
-    .nav-right { right: 10px; }
+    .nav-left { left: 20px; } 
+    .nav-right { right: 20px; }
     .nav-arrow { font-size: 1.2rem; }
 
     /* =========================================
-       MOBILE OPTIMIZATIONS
+       MOBILE OPTIMIZATIONS (FIXED DRIVE CONTROLS)
     ========================================= */
     @media (max-width: 768px) {
       body { padding: 1rem; }
@@ -167,14 +193,20 @@
       .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
       .media-thumb { height: 140px; }
       
-      .lightbox-content { width: 100%; height: 100dvh; }
       .nav-touch { opacity: 0.8; width: 40px; height: 40px; }
+      .nav-left { left: 5px; } 
+      .nav-right { right: 5px; }
+      .close-btn { top: 10px; right: 10px; width: 40px; height: 40px; font-size: 1.8rem; background: rgba(0,0,0,0.7); }
       
-      .video-frame-wrapper {
+      /* THE FIX: Give the iframe ample vertical height (85vh) so Google Drive 
+         can render its stacked mobile controls without squishing or clipping them. */
+      .popup-video-wrapper {
         width: 100%;
-        max-height: 75dvh;
-        border-radius: 4px;
+        height: 85vh; /* Ample room for both video and mobile controls */
+        border-radius: 0; /* Sits flush against the screen edges */
+        box-shadow: none;
       }
+      
       #lightbox-caption { display: none; }
     }
   </style>
@@ -376,7 +408,7 @@
     }
 
     /* =========================================
-       4. LIGHTBOX & HISTORY INTEGRATION
+       4. CLEAN LIGHTBOX INTEGRATION
     ========================================= */
 
     function userOpensLightbox(index) {
@@ -398,7 +430,7 @@
       mediaContainer.innerHTML = ''; 
       if (isVideo) {
         mediaContainer.innerHTML = `
-          <div class="video-frame-wrapper">
+          <div class="popup-video-wrapper">
             <iframe src="https://drive.google.com/file/d/${file.id}/preview" allow="autoplay" allowfullscreen></iframe>
           </div>
         `;
