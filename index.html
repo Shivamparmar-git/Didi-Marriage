@@ -55,7 +55,7 @@
     body.no-scroll { overflow: hidden; }
 
     /* =========================================
-       CLEAN LIGHTBOX & POPUP CSS
+       CLEAN LIGHTBOX CSS
     ========================================= */
     #lightbox { 
       position: fixed; 
@@ -114,34 +114,20 @@
       position: relative;
     }
 
-    /* Standard Popup for Images */
-    #media-container img { 
-      max-width: 90%; 
-      max-height: 85vh; 
+    /* Media Embed Sizing */
+    #media-container img, 
+    #media-container iframe { 
+      width: 90%; 
+      height: 85vh; 
+      max-width: 1000px;
       object-fit: contain; 
       border-radius: 8px; 
+      border: none;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
     
-    /* Clean, Standard Popup for Videos */
-    .popup-video-wrapper {
-      width: 90%;
-      max-width: 1000px;
-      height: 75vh;
+    #media-container iframe {
       background: #000;
-      border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-      overflow: hidden;
-      position: relative; 
-    }
-    .popup-video-wrapper iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
     }
     
     #lightbox-caption { 
@@ -186,7 +172,7 @@
     .nav-arrow { font-size: 1.2rem; }
 
     /* =========================================
-       MOBILE OPTIMIZATIONS (PERFECT UI FIX)
+       MOBILE OPTIMIZATIONS
     ========================================= */
     @media (max-width: 768px) {
       body { padding: 1rem; }
@@ -198,13 +184,12 @@
         opacity: 0.8; 
         width: 40px; 
         height: 40px; 
-        top: 25%; /* Move arrows UP so they don't block the center mobile play button */
+        top: 25%;
       }
       .nav-left { left: 10px; } 
       .nav-right { right: 10px; }
       
       .close-btn { 
-        /* Move Close button to TOP-LEFT so it doesn't overlap Google's pop-out button */
         top: 15px; 
         left: 15px; 
         right: auto;
@@ -214,8 +199,9 @@
         background: rgba(0,0,0,0.7); 
       }
       
-      /* Force the iframe to be 100% of the screen on mobile, mimicking a native window */
-      .popup-video-wrapper {
+      /* Let iframe take full screen on mobile */
+      #media-container img, 
+      #media-container iframe {
         width: 100vw;
         height: 100dvh; 
         border-radius: 0; 
@@ -444,11 +430,7 @@
       
       mediaContainer.innerHTML = ''; 
       if (isVideo) {
-        mediaContainer.innerHTML = `
-          <div class="popup-video-wrapper">
-            <iframe src="https://drive.google.com/file/d/${file.id}/preview" allow="autoplay" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true"></iframe>
-          </div>
-        `;
+        mediaContainer.innerHTML = `<iframe src="https://drive.google.com/file/d/${file.id}/preview" allow="autoplay" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true"></iframe>`;
       } else {
         mediaContainer.innerHTML = `<img src="https://lh3.googleusercontent.com/d/${file.id}" alt="image">`;
       }
