@@ -84,11 +84,12 @@
       align-items: center;
     }
 
+    /* Standard Desktop Close Button */
     .close-btn { 
       position: absolute;
       top: 15px;
       right: 15px;
-      background: rgba(0,0,0,0.5); 
+      background: rgba(0,0,0,0.6); 
       border: 1px solid rgba(255,255,255,0.2);
       color: #fff; 
       font-size: 2rem; 
@@ -101,9 +102,9 @@
       justify-content: center;
       line-height: 1;
       z-index: 1020;
-      transition: background 0.2s, transform 0.2s;
+      transition: background 0.2s;
     }
-    .close-btn:hover { background: rgba(0,0,0,0.8); transform: scale(1.05); }
+    .close-btn:hover { background: rgba(0,0,0,0.8); }
 
     #media-container { 
       width: 100%; 
@@ -114,19 +115,16 @@
       position: relative;
     }
 
-    /* Media Embed Sizing */
-    #media-container img, 
+    /* Standard Desktop Popup Sizing for Image & iframe */
+    #media-container img,
     #media-container iframe { 
       width: 90%; 
       height: 85vh; 
-      max-width: 1000px;
+      max-width: 1100px;
       object-fit: contain; 
       border-radius: 8px; 
       border: none;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-    
-    #media-container iframe {
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       background: #000;
     }
     
@@ -144,7 +142,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 80%;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     }
     
     .nav-touch { 
@@ -163,9 +160,8 @@
       border-radius: 50%;
       color: white; 
       z-index: 1015; 
-      transition: opacity 0.2s, background 0.2s;
+      transition: opacity 0.2s;
     }
-    .nav-touch:hover { background: rgba(0,0,0,0.7); }
     @media (hover: hover) { .lightbox-content:hover .nav-touch { opacity: 1; } }
     .nav-left { left: 20px; } 
     .nav-right { right: 20px; }
@@ -184,11 +180,12 @@
         opacity: 0.8; 
         width: 40px; 
         height: 40px; 
-        top: 25%;
+        top: 25%; /* Raised to avoid blocking Google Drive's mobile play button */
       }
       .nav-left { left: 10px; } 
       .nav-right { right: 10px; }
       
+      /* Move close button to top-left to avoid Google Drive's top-right controls */
       .close-btn { 
         top: 15px; 
         left: 15px; 
@@ -196,11 +193,10 @@
         width: 40px; 
         height: 40px; 
         font-size: 1.8rem; 
-        background: rgba(0,0,0,0.7); 
       }
       
-      /* Let iframe take full screen on mobile */
-      #media-container img, 
+      /* Allow iframe to comfortably fill the screen so native mobile controls fit */
+      #media-container img,
       #media-container iframe {
         width: 100vw;
         height: 100dvh; 
@@ -237,6 +233,7 @@
     ========================================= */
     const API_KEY = 'INJECT_API_KEY';
     
+    // Add as many starting folders as you want here!
     const ROOT_FOLDERS = [
       { id: 'INJECT_FOLDER_ID_1', name: 'Folder 1' },
       { id: 'INJECT_FOLDER_ID_2', name: 'Folder 2' },
@@ -271,10 +268,12 @@
       if (state.type === 'folder') {
         if (lightbox.classList.contains('active')) {
           closeLightboxUI();
+          
           const oldFolderId = pathHistory[pathHistory.length - 1].id;
           const newFolderId = state.pathHistory[state.pathHistory.length - 1].id;
           if (oldFolderId === newFolderId) return; 
         }
+
         pathHistory = state.pathHistory;
         renderCurrentState();
       } 
@@ -286,6 +285,7 @@
     function onFolderClick(folderId, folderName) {
       const safeName = folderName.replace(/&quot;/g, '"').replace(/\\'/g, "'");
       pathHistory.push({ id: folderId, name: safeName });
+      
       history.pushState({ type: 'folder', pathHistory: pathHistory }, "", `?folder=${folderId}`);
       renderCurrentState();
     }
@@ -293,6 +293,7 @@
     function onBreadcrumbClick(index) {
       pathHistory = pathHistory.slice(0, index + 1);
       const target = pathHistory[pathHistory.length - 1];
+      
       history.pushState({ type: 'folder', pathHistory: pathHistory }, "", target.id === 'HOME' ? "?home" : `?folder=${target.id}`);
       renderCurrentState();
     }
@@ -409,7 +410,7 @@
     }
 
     /* =========================================
-       4. CLEAN LIGHTBOX INTEGRATION
+       4. LIGHTBOX INTEGRATION (CLEAN IFRAME)
     ========================================= */
 
     function userOpensLightbox(index) {
@@ -430,7 +431,8 @@
       
       mediaContainer.innerHTML = ''; 
       if (isVideo) {
-        mediaContainer.innerHTML = `<iframe src="https://drive.google.com/file/d/${file.id}/preview" allow="autoplay" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true"></iframe>`;
+        // Embed exactly matching user's clean iframe request
+        mediaContainer.innerHTML = `<iframe src="https://drive.google.com/file/d/${file.id}/preview" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true"></iframe>`;
       } else {
         mediaContainer.innerHTML = `<img src="https://lh3.googleusercontent.com/d/${file.id}" alt="image">`;
       }
@@ -461,7 +463,7 @@
 
     document.getElementById('close-btn').addEventListener('click', userClosesLightbox);
     lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox || e.target.classList.contains('lightbox-content')) userClosesLightbox();
+        if (e.target === lightbox || e.target.classList.contains('lightbox-content') || e.target.id === 'media-container') userClosesLightbox();
     });
     
     document.getElementById('prev-btn').addEventListener('click', (e) => { e.stopPropagation(); navigateGallery(-1); });
