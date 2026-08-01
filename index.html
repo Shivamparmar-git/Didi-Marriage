@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Multi-Root Drive Manager</title>
   <style>
-    /* --- CSS (Base) --- */
+    /* --- CSS (Unchanged Base) --- */
     :root {
       --bg-color: #0d1117; --card-bg: #161b22; --text-color: #e6edf3;
       --accent: #2f81f7; --hover-bg: #21262d; --border-color: #30363d;
-      --overlay-bg: rgba(0, 0, 0, 0.9);
+      --overlay-bg: rgba(0, 0, 0, 0.95);
       --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -55,15 +55,15 @@
     body.no-scroll { overflow: hidden; }
 
     /* =========================================
-       CLEAN LIGHTBOX & POPUP CSS
+       FIXED LIGHTBOX & PERFECT PLAYER SIZE CSS
     ========================================= */
-    #lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background-color: var(--overlay-bg); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    #lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; background-color: var(--overlay-bg); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
     #lightbox.active { opacity: 1; pointer-events: auto; }
     
     .lightbox-content { 
       position: relative; 
-      width: 100%; 
-      height: 100%; 
+      width: 95%; 
+      height: 95dvh; 
       display: flex; 
       flex-direction: column; 
       justify-content: center;
@@ -72,8 +72,8 @@
 
     .close-btn { 
       position: absolute;
-      top: 15px;
-      right: 15px;
+      top: 10px;
+      right: 10px;
       background: rgba(0,0,0,0.6); 
       border: none; 
       color: #fff; 
@@ -99,36 +99,30 @@
       align-items: center; 
       position: relative;
     }
-
-    /* Standard Popup for Images */
-    #media-container img { 
-      max-width: 90%; 
-      max-height: 85vh; 
-      object-fit: contain; 
-      border-radius: 8px; 
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
+    #media-container img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
     
-    /* Clean, Standard Popup for Videos */
-    .popup-video-wrapper {
-      width: 90%;
-      max-width: 1000px;
-      height: 70vh;
-      background: #000;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      overflow: hidden;
-    }
-    .popup-video-wrapper iframe {
+    /* Strict 16:9 Wrapper ensuring compact, perfectly sized player controls */
+    .video-frame-wrapper {
       width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
+      max-width: 950px;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .video-frame-wrapper iframe { 
+      width: 100%; 
+      height: 100%; 
+      border: none; 
     }
     
     #lightbox-caption { 
       position: absolute;
-      bottom: 15px;
+      bottom: 5px;
       left: 50%;
       transform: translateX(-50%);
       font-size: 0.95rem; 
@@ -158,11 +152,10 @@
       border-radius: 50%;
       color: white; 
       z-index: 1015; 
-      transition: opacity 0.2s;
     }
     @media (hover: hover) { .lightbox-content:hover .nav-touch { opacity: 1; } }
-    .nav-left { left: 20px; } 
-    .nav-right { right: 20px; }
+    .nav-left { left: 10px; } 
+    .nav-right { right: 10px; }
     .nav-arrow { font-size: 1.2rem; }
 
     /* =========================================
@@ -174,17 +167,14 @@
       .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
       .media-thumb { height: 140px; }
       
+      .lightbox-content { width: 100%; height: 100dvh; }
       .nav-touch { opacity: 0.8; width: 40px; height: 40px; }
-      .nav-left { left: 10px; } 
-      .nav-right { right: 10px; }
       
-      /* Make popup stretch on smaller screens */
-      .popup-video-wrapper {
+      .video-frame-wrapper {
         width: 100%;
-        height: 40vh; /* Standard aspect for mobile video players */
-        border-radius: 0; /* Remove rounded corners to sit flush against edges */
+        max-height: 75dvh;
+        border-radius: 4px;
       }
-      
       #lightbox-caption { display: none; }
     }
   </style>
@@ -386,7 +376,7 @@
     }
 
     /* =========================================
-       4. CLEAN LIGHTBOX INTEGRATION
+       4. LIGHTBOX & HISTORY INTEGRATION
     ========================================= */
 
     function userOpensLightbox(index) {
@@ -408,7 +398,7 @@
       mediaContainer.innerHTML = ''; 
       if (isVideo) {
         mediaContainer.innerHTML = `
-          <div class="popup-video-wrapper">
+          <div class="video-frame-wrapper">
             <iframe src="https://drive.google.com/file/d/${file.id}/preview" allow="autoplay" allowfullscreen></iframe>
           </div>
         `;
