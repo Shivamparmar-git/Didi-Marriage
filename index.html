@@ -106,11 +106,11 @@
       This allows Google Drive to naturally position its controls at the bottom 
       without squishing them or stretching the video out of proportion. 
     */
-    .video-frame-wrapper {
+.video-frame-wrapper {
       width: 100%;
-      height: 80vh; /* Responsive height relative to screen */
+      height: 80vh;
       max-width: 1200px;
-      background: transparent;
+      background: #000;
       border-radius: 8px;
       overflow: hidden;
       position: relative;
@@ -171,14 +171,27 @@
       .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
       .media-thumb { height: 140px; }
       
-      .lightbox-content { width: 100%; height: 100dvh; }
+      .lightbox-content { width: 100%; height: 100dvh; padding: 0; }
       .nav-touch { opacity: 0.8; width: 40px; height: 40px; }
       
-      /* Allows slightly more room vertically on smaller mobile screens */
+      /* THE TRICK: Force desktop controls on mobile by scaling a large iframe */
       .video-frame-wrapper {
-        height: 75vh;
-        border-radius: 4px;
+        width: 100vw;
+        height: 56.25vw; /* strict 16:9 aspect ratio based on screen width */
+        max-height: none;
+        border-radius: 0;
+        display: block;
       }
+      .video-frame-wrapper iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1024px !important; /* Force a desktop width */
+        height: 576px !important; /* Force a desktop height (16:9) */
+        transform-origin: top left;
+        transform: scale(calc(100vw / 1024)); /* Mathematically scale the large iframe down to fit the phone screen */
+      }
+      
       #lightbox-caption { display: none; }
     }
   </style>
