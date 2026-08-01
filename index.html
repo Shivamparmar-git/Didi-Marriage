@@ -168,7 +168,7 @@
     .nav-arrow { font-size: 1.2rem; }
 
     /* =========================================
-       MOBILE OPTIMIZATIONS
+       MOBILE OPTIMIZATIONS (IFRAME TRICK)
     ========================================= */
     @media (max-width: 768px) {
       body { padding: 1rem; }
@@ -180,12 +180,11 @@
         opacity: 0.8; 
         width: 40px; 
         height: 40px; 
-        top: 25%; /* Raised to avoid blocking Google Drive's mobile play button */
+        top: 25%;
       }
       .nav-left { left: 10px; } 
       .nav-right { right: 10px; }
       
-      /* Move close button to top-left to avoid Google Drive's top-right controls */
       .close-btn { 
         top: 15px; 
         left: 15px; 
@@ -195,16 +194,37 @@
         font-size: 1.8rem; 
       }
       
-      /* Allow iframe to comfortably fill the screen so native mobile controls fit */
-      #media-container img,
-      #media-container iframe {
+      #lightbox-caption { display: none; }
+      
+      /* Image stays normal full-screen */
+      #media-container img {
         width: 100vw;
         height: 100dvh; 
         border-radius: 0; 
         box-shadow: none;
       }
       
-      #lightbox-caption { display: none; }
+      /* 
+         THE TRICK: Force Google to load the laptop UI, then shrink it to fit the phone.
+         This prevents the bulky mobile controls and enables auto-hiding.
+      */
+      #media-container {
+        overflow: hidden;
+      }
+      
+      #media-container iframe {
+        /* Force a standard laptop resolution */
+        width: 1024px !important;
+        height: 576px !important;
+        min-width: 1024px;
+        min-height: 576px;
+        border-radius: 0;
+        box-shadow: none;
+        
+        /* Mathematically scale it down to exactly fit the phone's width */
+        transform: scale(calc(100vw / 1024));
+        transform-origin: center center;
+      }
     }
   </style>
 </head>
@@ -410,7 +430,7 @@
     }
 
     /* =========================================
-       4. LIGHTBOX INTEGRATION (CLEAN IFRAME)
+       4. LIGHTBOX INTEGRATION
     ========================================= */
 
     function userOpensLightbox(index) {
@@ -431,7 +451,6 @@
       
       mediaContainer.innerHTML = ''; 
       if (isVideo) {
-        // Embed exactly matching user's clean iframe request
         mediaContainer.innerHTML = `<iframe src="https://drive.google.com/file/d/${file.id}/preview" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true"></iframe>`;
       } else {
         mediaContainer.innerHTML = `<img src="https://lh3.googleusercontent.com/d/${file.id}" alt="image">`;
