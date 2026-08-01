@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Multi-Root Drive Manager</title>
   <style>
     /* --- CSS (Base) --- */
@@ -132,11 +132,12 @@
       border-radius: 12px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.6);
       overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      position: relative; /* Changed for better iframe sizing */
     }
     .popup-video-wrapper iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       border: none;
@@ -185,7 +186,7 @@
     .nav-arrow { font-size: 1.2rem; }
 
     /* =========================================
-       MOBILE OPTIMIZATIONS (FIXED DRIVE CONTROLS)
+       MOBILE OPTIMIZATIONS (PERFECT UI FIX)
     ========================================= */
     @media (max-width: 768px) {
       body { padding: 1rem; }
@@ -193,17 +194,31 @@
       .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
       .media-thumb { height: 140px; }
       
-      .nav-touch { opacity: 0.8; width: 40px; height: 40px; }
-      .nav-left { left: 5px; } 
-      .nav-right { right: 5px; }
-      .close-btn { top: 10px; right: 10px; width: 40px; height: 40px; font-size: 1.8rem; background: rgba(0,0,0,0.7); }
+      .nav-touch { 
+        opacity: 0.8; 
+        width: 40px; 
+        height: 40px; 
+        top: 25%; /* Move arrows UP so they don't block the center mobile play button */
+      }
+      .nav-left { left: 10px; } 
+      .nav-right { right: 10px; }
       
-      /* THE FIX: Give the iframe ample vertical height (85vh) so Google Drive 
-         can render its stacked mobile controls without squishing or clipping them. */
+      .close-btn { 
+        /* Move Close button to TOP-LEFT so it doesn't overlap Google's pop-out button */
+        top: 15px; 
+        left: 15px; 
+        right: auto;
+        width: 40px; 
+        height: 40px; 
+        font-size: 1.8rem; 
+        background: rgba(0,0,0,0.7); 
+      }
+      
+      /* Force the iframe to be 100% of the screen on mobile, mimicking a native window */
       .popup-video-wrapper {
-        width: 100%;
-        height: 85vh; /* Ample room for both video and mobile controls */
-        border-radius: 0; /* Sits flush against the screen edges */
+        width: 100vw;
+        height: 100dvh; 
+        border-radius: 0; 
         box-shadow: none;
       }
       
