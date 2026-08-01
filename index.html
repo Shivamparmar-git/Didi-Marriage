@@ -84,7 +84,6 @@
       align-items: center;
     }
 
-    /* Standard Desktop Close Button */
     .close-btn { 
       position: absolute;
       top: 15px;
@@ -115,15 +114,30 @@
       position: relative;
     }
 
-    /* Standard Desktop Popup Sizing for Image & iframe */
-    #media-container img,
-    #media-container iframe { 
+    #media-container img { 
       width: 90%; 
       height: 85vh; 
       max-width: 1100px;
       object-fit: contain; 
       border-radius: 8px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    
+    /* Desktop Video Wrapper */
+    .video-scaler {
+      width: 90%;
+      height: 85vh;
+      max-width: 1100px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .video-scaler iframe {
+      width: 100%;
+      height: 100%;
       border: none;
+      border-radius: 8px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       background: #000;
     }
@@ -168,7 +182,7 @@
     .nav-arrow { font-size: 1.2rem; }
 
     /* =========================================
-       MOBILE OPTIMIZATIONS
+       MOBILE OPTIMIZATIONS & IFRAME SCALING TRICK
     ========================================= */
     @media (max-width: 768px) {
       body { padding: 1rem; }
@@ -176,35 +190,38 @@
       .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
       .media-thumb { height: 140px; }
       
-      .nav-touch { 
-        opacity: 0.8; 
-        width: 40px; 
-        height: 40px; 
-        top: 25%; /* Raised to avoid blocking Google Drive's mobile play button */
-      }
+      .nav-touch { opacity: 0.8; width: 40px; height: 40px; top: 25%; }
       .nav-left { left: 10px; } 
       .nav-right { right: 10px; }
       
-      /* Move close button to top-left to avoid Google Drive's top-right controls */
-      .close-btn { 
-        top: 15px; 
-        left: 15px; 
-        right: auto;
-        width: 40px; 
-        height: 40px; 
-        font-size: 1.8rem; 
-      }
+      .close-btn { top: 15px; left: 15px; right: auto; width: 40px; height: 40px; font-size: 1.8rem; background: rgba(0,0,0,0.7); }
+      #media-container img { width: 100vw; height: 100dvh; border-radius: 0; box-shadow: none; }
+      #lightbox-caption { display: none; }
       
-      /* Allow iframe to comfortably fill the screen so native mobile controls fit */
-      #media-container img,
-      #media-container iframe {
+      /* --- THE TRICK TO FORCE LAPTOP VIEW ON MOBILE --- */
+      .video-scaler {
         width: 100vw;
-        height: 100dvh; 
-        border-radius: 0; 
+        height: 56.25vw; /* Creates a perfect 16:9 box based on phone screen width */
+        position: relative;
+        overflow: hidden; /* Hide anything outside this box */
+        border-radius: 0;
         box-shadow: none;
       }
       
-      #lightbox-caption { display: none; }
+      .video-scaler iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        /* 1. Force the iframe to render at a large laptop resolution */
+        width: 1024px !important;
+        height: 576px !important;
+        max-width: none;
+        max-height: none;
+        border-radius: 0;
+        transform-origin: top left;
+        /* 2. Mathematically scale the 1024px video down so it fits exactly on the phone screen */
+        transform: scale(calc(100vw / 1024));
+      }
     }
   </style>
 </head>
@@ -410,7 +427,7 @@
     }
 
     /* =========================================
-       4. LIGHTBOX INTEGRATION (CLEAN IFRAME)
+       4. LIGHTBOX INTEGRATION (IFRAME SCALING TRICK)
     ========================================= */
 
     function userOpensLightbox(index) {
@@ -431,8 +448,11 @@
       
       mediaContainer.innerHTML = ''; 
       if (isVideo) {
-        // Embed exactly matching user's clean iframe request
-        mediaContainer.innerHTML = `<iframe src="https://drive.google.com/file/d/${file.id}/preview" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true"></iframe>`;
+        mediaContainer.innerHTML = `
+          <div class="video-scaler">
+            <iframe src="https://drive.google.com/file/d/${file.id}/preview" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true"></iframe>
+          </div>
+        `;
       } else {
         mediaContainer.innerHTML = `<img src="https://lh3.googleusercontent.com/d/${file.id}" alt="image">`;
       }
